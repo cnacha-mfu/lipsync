@@ -11,7 +11,7 @@ lip = LipSync(
 )
 
 lip.sync(
-    'source/person.mp4',
-    'source/audio.wav',
+    'avatar-speaking.mp4',
+    'question.mp3',
     'result.mp4',
 )
