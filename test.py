@@ -2,7 +2,7 @@ from lipsync import LipSync
 
 lip = LipSync(
     model='wav2lip',
-    checkpoint_path='weights/wav2lip.pth',
+    checkpoint_path='models/wav2lip.pth',
     nosmooth=True,
     device='cuda',
     cache_dir='cache',
@@ -11,7 +11,7 @@ lip = LipSync(
 )
 
 lip.sync(
-    'avatar-speaking.mp4',
+    'avatar_speaking.mp4',
     'question.mp3',
-    'result.mp4',
+    'output/result.mp4',
 )

@@ -1,5 +1,5 @@
-# Use Ubuntu 22.04 with Python 3.10 for optimal compatibility
-FROM ubuntu:22.04
+# Use NVIDIA CUDA base image with Ubuntu 22.04 and Python 3.10
+FROM nvidia/cuda:12.4.0-runtime-ubuntu22.04
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -7,7 +7,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     DEBIAN_FRONTEND=noninteractive \
-    TZ=UTC
+    TZ=UTC \
+    NVIDIA_VISIBLE_DEVICES=all \
+    NVIDIA_DRIVER_CAPABILITIES=compute,utility \
+    CUDA_HOME=/usr/local/cuda \
+    PATH=/usr/local/cuda/bin:${PATH} \
+    LD_LIBRARY_PATH=/usr/local/cuda/lib64:${LD_LIBRARY_PATH}
 
 # Set work directory
 WORKDIR /app
@@ -21,6 +26,7 @@ RUN apt-get update -o Acquire::Check-Valid-Until=false -o Acquire::Check-Date=fa
     python3-venv \
     build-essential \
     curl \
+    wget \
     ffmpeg \
     libglib2.0-0 \
     libsm6 \
@@ -31,6 +37,7 @@ RUN apt-get update -o Acquire::Check-Valid-Until=false -o Acquire::Check-Date=fa
     libglib2.0-dev \
     libgtk-3-dev \
     pkg-config \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
 # Set python3 as default python and pip (Ubuntu 22.04 uses Python 3.10 by default)
@@ -52,6 +59,9 @@ COPY . .
 # Then move any .pth files to models directory using shell commands
 RUN find . -name "*.pth" -type f -exec cp {} /app/models/ \; 2>/dev/null || true
 
+# Install CUDA-compatible PyTorch first (adjust version as needed)
+RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
@@ -59,11 +69,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN pip uninstall -y opencv-python opencv-contrib-python opencv-python-headless || true
 
 # Install opencv-python-headless (best for server environments)
-RUN pip install opencv-python-headless  
-#==4.8.1.78
+RUN pip install opencv-python-headless
 
-# Copy application code
-COPY . .
+# Verify CUDA installation
+RUN python -c "import torch; print(f'CUDA available: {torch.cuda.is_available()}'); print(f'CUDA version: {torch.version.cuda}'); print(f'GPU count: {torch.cuda.device_count()}')" || echo "CUDA verification will happen at runtime"
 
 # Create non-root user for security
 RUN adduser --disabled-password --gecos '' appuser && \

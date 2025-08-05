@@ -1,0 +1,1 @@
+docker run -it --rm -v C:\Users\Nacha\github\lipsync:/app lipsync bash
